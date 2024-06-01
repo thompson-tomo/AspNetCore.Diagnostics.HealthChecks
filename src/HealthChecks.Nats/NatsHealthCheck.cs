@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Text;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using NATS.Client;
@@ -18,6 +19,7 @@ public sealed class NatsHealthCheck : IHealthCheck, IDisposable
     private readonly NatsOptions _options;
 
     private IConnection? _connection;
+
 
     public NatsHealthCheck(NatsOptions natsOptions)
     {
@@ -99,6 +101,12 @@ public sealed class NatsHealthCheck : IHealthCheck, IDisposable
         static IReadOnlyDictionary<string, object> GetStatsData(IConnection connection) =>
             new Dictionary<string, object>
             {
+                ["healthcheck.name"] = nameof(NatsHealthCheck),
+                ["healthcheck.task"] = "ready",
+                ["messaging.system"] = "nats",
+                ["event.name"] = "messaging.healthcheck",
+                ["server.address"] = connection.ServerInfo.Host,
+                ["server.port"] = connection.ServerInfo.Port,
                 [nameof(connection.Stats.InMsgs)] = connection.Stats.InMsgs,
                 [nameof(connection.Stats.OutMsgs)] = connection.Stats.OutMsgs,
                 [nameof(connection.Stats.InBytes)] = connection.Stats.InBytes,

@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -7,6 +8,12 @@ namespace HealthChecks.Aws.Sns;
 public class SnsTopicAndSubscriptionHealthCheck : IHealthCheck
 {
     private readonly SnsOptions _snsOptions;
+    private readonly Dictionary<string, object> _baseCheckDetails = new Dictionary<string, object>{
+                    { "healthcheck.name", nameof(SnsTopicAndSubscriptionHealthCheck) },
+                    { "healthcheck.task", "topicandsubsctiption" },
+                    { "messaging.system", "awssns" },
+                    { "event.name", "messaging.healthcheck"}
+    };
 
     public SnsTopicAndSubscriptionHealthCheck(SnsOptions snsOptions)
     {
@@ -16,6 +23,7 @@ public class SnsTopicAndSubscriptionHealthCheck : IHealthCheck
     /// <inheritdoc />
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
+        Dictionary<string, object> checkDetails = _baseCheckDetails;
         try
         {
             using var client = CreateSnsClient();
@@ -43,11 +51,11 @@ public class SnsTopicAndSubscriptionHealthCheck : IHealthCheck
                 }
             }
 
-            return HealthCheckResult.Healthy();
+            return HealthCheckResult.Healthy(data: new ReadOnlyDictionary<string, object>(checkDetails));
         }
         catch (Exception ex)
         {
-            return new HealthCheckResult(context.Registration.FailureStatus, exception: ex);
+            return new HealthCheckResult(context.Registration.FailureStatus, exception: ex, data: new ReadOnlyDictionary<string, object>(checkDetails));
         }
     }
 

@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Microsoft.Azure.Devices;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
@@ -6,6 +7,12 @@ namespace HealthChecks.Azure.IoTHub;
 public class IoTHubHealthCheck : IHealthCheck
 {
     private readonly IoTHubOptions _options;
+    private readonly Dictionary<string, object> _baseCheckDetails = new Dictionary<string, object>{
+                    { "healthcheck.name", nameof(IoTHubHealthCheck) },
+                    { "healthcheck.task", "ready" },
+                    { "messaging.system", "azureiothub" },
+                    { "event.name", "messaging.healthcheck"}
+    };
 
     public IoTHubHealthCheck(IoTHubOptions options)
     {
@@ -15,6 +22,7 @@ public class IoTHubHealthCheck : IHealthCheck
     /// <inheritdoc />
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
+        Dictionary<string, object> checkDetails = _baseCheckDetails;
         try
         {
             if (_options.RegistryWriteCheck)
@@ -30,11 +38,11 @@ public class IoTHubHealthCheck : IHealthCheck
                 await ExecuteServiceConnectionCheckAsync(cancellationToken).ConfigureAwait(false);
             }
 
-            return HealthCheckResult.Healthy();
+            return HealthCheckResult.Healthy(data: new ReadOnlyDictionary<string, object>(checkDetails));
         }
         catch (Exception ex)
         {
-            return new HealthCheckResult(context.Registration.FailureStatus, exception: ex);
+            return new HealthCheckResult(context.Registration.FailureStatus, exception: ex, data: new ReadOnlyDictionary<string, object>(checkDetails));
         }
     }
 
